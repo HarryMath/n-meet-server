@@ -66,10 +66,8 @@ export class RoomsService {
                 if (destination) {
                     payload.to = undefined;
                     payload.from = client.conn.id;
-                    setTimeout(() => {
-                        console.log(client.conn.id + ' |-- candidate --> ' + payload.to);
-                        destination.socket.emit('candidate', payload);
-                    }, 20);
+                    console.log(client.conn.id + ' |-- candidate --> ' + payload.to);
+                    destination.socket.emit('candidate', payload);
                 }
             });
 
