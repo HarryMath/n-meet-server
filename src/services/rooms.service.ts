@@ -3,11 +3,18 @@ import {IRoom, IRoomDetails, IRoomMember} from "../models/models";
 import {Room} from "../models/Room";
 import { Server } from "socket.io";
 
+export interface IUser {
+    isJoined: boolean;
+    socket: any;
+    id: string;
+    ip: string;
+}
+
 @Injectable()
 export class RoomsService {
 
     private readonly rooms: Room[];
-    private static readonly users: {isJoined: boolean, socket: any}[] = [];
+    private static readonly users: IUser[] = [];
     private static io;
 
     constructor() {
@@ -27,14 +34,14 @@ export class RoomsService {
     public static createSocket(httpServer): void {
         RoomsService.io = new Server(httpServer);
         RoomsService.io.on('connection', (client) => {
-            const user = {isJoined: false, socket: client};
-            console.log('a user connected: ' + client.conn.id);
+            const user = {isJoined: false, socket: client, id: client.conn.id, ip: client.conn.remoteAddress};
+            console.log('a user connected: ' + user.id);
             RoomsService.users.push(user);
 
-            client.on('get-members', () => {
+            client.on('join', () => {
                 RoomsService.users.forEach(u => {
-                    if (u.isJoined && u.socket.conn.id !== client.conn.id) {
-                        console.log('user with id ' + client.conn.id + ' got ' + u.socket.conn.id);
+                    if (u.isJoined && u.id !== client.conn.id) {
+                        console.log('user with id ' + user.id + ' got ' + u.id);
                         client.emit('member', {userId: u.socket.conn.id});
                     }
                 });
@@ -42,41 +49,43 @@ export class RoomsService {
             });
 
             client.on('offer', payload => {
-                console.log(client.conn.id + ' |-- offer --> ' + payload.to);
-                const destination = RoomsService.users.find(u => u.socket.conn.id === payload.to);
+                console.log(user.id + ' |-- offer --> ' + payload.to);
+                const destination = RoomsService.users.find(u => u.id === payload.to);
                 if (destination) {
                     payload.to = undefined;
-                    payload.from = client.conn.id;
+                    payload.from = user.id;
                     destination.socket.emit('offer', payload);
                 }
             });
 
             client.on('answer', payload => {
-                console.log(client.conn.id + ' |-- answer --> ' + payload.to);
-                const destination = RoomsService.users.find(u => u.socket.conn.id === payload.to);
+                console.log(user.id + ' |-- answer --> ' + payload.to);
+                const destination = RoomsService.users.find(u => u.id === payload.to);
                 if (destination) {
                     payload.to = undefined;
-                    payload.from = client.conn.id;
+                    payload.from = user.id;
                     destination.socket.emit('answer', payload);
                 }
             });
 
             client.on('candidate', payload => {
-                const destination = RoomsService.users.find(u => u.socket.conn.id === payload.to);
+                const destination = RoomsService.users.find(u => u.id === payload.to);
                 if (destination) {
                     payload.to = undefined;
-                    payload.from = client.conn.id;
-                    console.log(client.conn.id + ' |-- candidate --> ' + payload.to);
+                    payload.from = user.id;
                     destination.socket.emit('candidate', payload);
                 }
             });
 
             client.on('disconnect', () => {
-               client.broadcast.emit('leave', {userId: client.conn.id});
-               console.log(client.conn.id + ' disconnected');
-               const i = RoomsService.users.indexOf(client);
-               RoomsService.users.splice(i, 1);
-               console.log('users amount: ' + RoomsService.users.length);
+               client.broadcast.emit('leave', {userId: user.id});
+               console.log(user.id + ' disconnected');
+               for (let i = 0; i < RoomsService.users.length; i++) {
+                   if (RoomsService.users[i].id === user.id || RoomsService.users[i].ip === user.ip) {
+                       RoomsService.users.splice(i--, 1);
+                   }
+               }
+               console.log('users amount: ' + RoomsService.users.length + '\n');
             });
         })
     }
