@@ -15,19 +15,22 @@ export class MailService {
       secure: true,
       auth: {
         user: this.from,
-        pass: 'Mathpop22091337'
+        pass: 'ouupznxoqzsqtjwg'
       }
     });
+    this.transporter.verify()
+      .then(() => console.log('[mail verify] success'))
+      .catch((e) => console.log('[mail verify] error: ' + e));
   }
 
   async send(to: string, subject: string, body: string): Promise<{ isSuccess: boolean, message: string }> {
     const message = {from: this.from, to, subject, text: body};
     try {
       const result = await this.transporter.sendMail(message);
-      if (result.rejected) {
-        return {isSuccess: false, message: result.response};
+      if (result.accepted.length > 0) {
+        return {isSuccess: true, message: result.response};
       } else {
-        return {isSuccess: true, message: 'success'};
+        return {isSuccess: false, message: result.response};
       }
     } catch (e) {
       return {isSuccess: false, message: e};
