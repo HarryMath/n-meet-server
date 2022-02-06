@@ -12,13 +12,18 @@ const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
 const rooms_controller_1 = require("./controllers/rooms.controller");
 const rooms_service_1 = require("./services/rooms.service");
+const socket_gateway_1 = require("./gateways/socket.gateway");
+const auth_service_1 = require("./services/auth.service");
+const users_controller_1 = require("./controllers/users.controller");
+const mail_controller_1 = require("./controllers/mail.controller");
+const mail_service_1 = require("./services/mail.service");
 let AppModule = class AppModule {
 };
 AppModule = __decorate([
     (0, common_1.Module)({
         imports: [],
-        controllers: [app_controller_1.AppController, rooms_controller_1.RoomsController],
-        providers: [app_service_1.AppService, rooms_service_1.RoomsService],
+        controllers: [app_controller_1.AppController, rooms_controller_1.RoomsController, users_controller_1.UsersController, mail_controller_1.MailController],
+        providers: [app_service_1.AppService, rooms_service_1.RoomsService, auth_service_1.AuthService, socket_gateway_1.SocketGateway, mail_service_1.MailService],
     })
 ], AppModule);
 exports.AppModule = AppModule;

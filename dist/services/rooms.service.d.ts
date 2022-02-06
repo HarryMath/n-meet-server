@@ -1,16 +1,13 @@
-import { IRoom, IRoomDetails, IRoomMember } from "../models/models";
-export interface IUser {
-    isJoined: boolean;
-    socket: any;
-    id: string;
-    ip: string;
-}
+import { IAuthorisedUser, IGuest, IRoomDto } from '../models/models';
 export declare class RoomsService {
     private readonly rooms;
-    private static readonly users;
     private static io;
     constructor();
-    joinRoom(roomId: string, user: IRoomMember): IRoomDetails;
-    getAllRooms(): IRoom[];
-    static createSocket(httpServer: any): void;
+    createRoom(): string;
+    getOne(roomId: string, exceptUserId: string): IRoomDto;
+    addUser(user: IAuthorisedUser | IGuest, roomId: string): void;
+    hasRoom(roomId: string): boolean;
+    dropUser(socketId: string, roomId: string): boolean;
+    private dropUnusedRooms;
+    private generateRoomId;
 }

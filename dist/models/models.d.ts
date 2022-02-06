@@ -11,23 +11,36 @@ export interface IEvent {
 export interface IUser {
     login: string;
     name: string;
-    password: string | undefined;
-    photo: string | undefined;
+    password: string;
+    personId: number;
 }
-export interface IRoomMember {
+export interface IAuthorisedUser {
     login: string;
     name: string;
-    password: string | undefined;
-    photo: string | undefined;
-    ip: string;
-    port: string;
+    skinId: number;
+    socketId: string | undefined;
+    x: number;
+    y: number;
+    direction: 'top' | 'bottom' | 'left' | 'right';
 }
-export interface IRoom {
+export interface IGuest {
     name: string;
-    id: string;
+    skinId: number;
+    socketId: string | undefined;
+    x: number;
+    y: number;
+    direction: 'top' | 'bottom' | 'left' | 'right';
 }
-export interface IRoomDetails {
-    name: string;
+export interface IRoomDto {
     id: string;
-    members: IRoomMember[];
+    members: (IGuest | IAuthorisedUser)[];
+}
+export interface IJoinPayload {
+    token: string;
+    roomId: string;
+}
+export interface IMailData {
+    to: string;
+    subject: string;
+    body: string;
 }

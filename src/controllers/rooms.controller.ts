@@ -1,24 +1,29 @@
-import { Controller, Get, Param, Req, UseInterceptors } from "@nestjs/common";
-import {RoomsService} from "../services/rooms.service";
-import { Request } from 'express';
+import { Controller, Get, Headers, Param, Post } from '@nestjs/common';
+import { RoomsService } from '../services/rooms.service';
+import { AuthService, ResponseCodes } from '../services/auth.service';
+import { IRoomDto } from '../models/models';
 
 @Controller('rooms')
 export class RoomsController {
+  constructor(
+    private readonly roomsService: RoomsService,
+    private readonly authService: AuthService,
+  ) {}
 
-    constructor(private readonly roomsService: RoomsService) {}
-
-    @Get('')
-    getAll(): string {
-        return JSON.stringify(this.roomsService.getAllRooms());
+  @Get(':id')
+  getOne(@Headers('authorisation') token: string, @Param('id') roomId: string): IRoomDto | number {
+    if (this.authService.isAuthorised(token)) {
+      const user = this.authService.get(token);
+      if (this.roomsService.hasRoom(roomId)) {
+        return this.roomsService.getOne(roomId, user.socketId);
+      }
+      return ResponseCodes.NO_SUCH_ROOM;
     }
+    return ResponseCodes.UNAUTHORISED;
+  }
 
-    @Get(':id')
-    getOne(@Param('id') id: string, @Req() request: Request): string {
-        const port = String(request.socket.remotePort);
-        const ip = request.socket.remoteAddress;
-        return JSON.stringify(this.roomsService.joinRoom(id, {
-            name: '', port, ip, login: '', password: '', photo: ''
-        }))
-    }
-
+  @Post('create')
+  createRoom(@Headers('authorisation') token: string): {roomId: string} {
+    return {roomId: this.roomsService.createRoom()};
+  }
 }

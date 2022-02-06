@@ -8,81 +8,63 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var RoomsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RoomsService = void 0;
 const common_1 = require("@nestjs/common");
 const Room_1 = require("../models/Room");
-const socket_io_1 = require("socket.io");
-let RoomsService = RoomsService_1 = class RoomsService {
+const crypto = require('crypto');
+let RoomsService = class RoomsService {
     constructor() {
-        this.rooms = [new Room_1.Room('test')];
+        this.rooms = new Map();
     }
-    joinRoom(roomId, user) {
-        const room = this.rooms.find(r => r.getDTO().id === roomId);
-        room.addMember(user);
-        return room.getDetails();
+    createRoom() {
+        const roomId = this.generateRoomId();
+        this.rooms.set(roomId, new Room_1.Room(roomId));
+        return roomId;
     }
-    getAllRooms() {
-        return this.rooms.map(r => r.getDTO());
+    getOne(roomId, exceptUserId) {
+        if (this.rooms.has(roomId)) {
+            return this.rooms.get(roomId).getDto(exceptUserId);
+        }
+        console.warn('no room with id ' + roomId);
+        return { id: '', members: [] };
     }
-    static createSocket(httpServer) {
-        RoomsService_1.io = new socket_io_1.Server(httpServer);
-        RoomsService_1.io.on('connection', (client) => {
-            const user = { isJoined: false, socket: client, id: client.conn.id, ip: client.conn.remoteAddress };
-            console.log('[connected]  ' + user.id);
-            RoomsService_1.users.push(user);
-            client.on('join', () => {
-                RoomsService_1.users.forEach(u => {
-                    console.log('[joined]  ' + user.id);
-                    if (u.isJoined && u.id !== user.id) {
-                        console.log(user.id + ' <-- got --| ' + u.id);
-                        client.emit('member', { userId: u.id });
-                    }
-                });
-                user.isJoined = true;
-            });
-            client.on('offer', payload => {
-                console.log('[offer]  ' + user.id + ' ---> ' + payload.to);
-                const destination = RoomsService_1.users.find(u => u.id === payload.to);
-                if (destination) {
-                    payload.to = undefined;
-                    payload.from = user.id;
-                    destination.socket.emit('offer', payload);
-                }
-            });
-            client.on('answer', payload => {
-                console.log('[answer]  ' + user.id + ' ---> ' + payload.to);
-                const destination = RoomsService_1.users.find(u => u.id === payload.to);
-                if (destination) {
-                    payload.to = undefined;
-                    payload.from = user.id;
-                    destination.socket.emit('answer', payload);
-                }
-            });
-            client.on('candidate', payload => {
-                const destination = RoomsService_1.users.find(u => u.id === payload.to);
-                if (destination) {
-                    payload.to = undefined;
-                    payload.from = user.id;
-                    destination.socket.emit('candidate', payload);
-                }
-            });
-            client.on('disconnect', () => {
-                client.broadcast.emit('leave', { userId: user.id });
-                console.log('[disconnected]  ' + user.id);
-                for (let i = 0; i < RoomsService_1.users.length; i++) {
-                    if (RoomsService_1.users[i].id === user.id || RoomsService_1.users[i].ip === user.ip) {
-                        RoomsService_1.users.splice(i--, 1);
-                    }
-                }
-                console.log('users amount: ' + RoomsService_1.users.length + '\n');
-            });
-        });
+    addUser(user, roomId) {
+        if (this.rooms.has(roomId)) {
+            this.rooms.get(roomId).addUser(user);
+        }
+    }
+    hasRoom(roomId) {
+        return this.rooms.has(roomId);
+    }
+    dropUser(socketId, roomId) {
+        if (!this.rooms.has(roomId)) {
+            console.warn('[dropUser] no room with id "' + roomId + '"');
+            return false;
+        }
+        const room = this.rooms.get(roomId);
+        room.dropUser(socketId);
+        if (room.size() > 0) {
+            return true;
+        }
+        else {
+            if (Date.now() - room.createTimestamp > 1000 * 60 * 60) {
+                this.rooms.delete(roomId);
+            }
+            return false;
+        }
+    }
+    dropUnusedRooms() {
+    }
+    generateRoomId() {
+        const dataToEncrypt = String(this.rooms.size + Math.random());
+        return crypto.createHash('md5')
+            .update(dataToEncrypt)
+            .digest('hex')
+            .substring(0, 7) + this.rooms.size;
     }
 };
-RoomsService.users = [];
-RoomsService = RoomsService_1 = __decorate([
+RoomsService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [])
 ], RoomsService);

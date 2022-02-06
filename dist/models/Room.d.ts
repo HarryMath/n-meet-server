@@ -1,11 +1,12 @@
-import { IRoom, IRoomDetails, IRoomMember } from "./models";
+import { IAuthorisedUser, IGuest, IRoomDto } from './models';
 export declare class Room {
-    private readonly name;
+    readonly createTimestamp: number;
     private readonly id;
     private readonly members;
     private static totalRoomsCount;
-    constructor(name: string);
-    getDTO(): IRoom;
-    addMember(user: IRoomMember): void;
-    getDetails(): IRoomDetails;
+    constructor(id: string);
+    addUser(user: IAuthorisedUser | IGuest): void;
+    size(): number;
+    getDto(exceptUserId: string): IRoomDto;
+    dropUser(socketId: string): void;
 }

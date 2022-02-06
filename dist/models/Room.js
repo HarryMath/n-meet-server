@@ -2,20 +2,34 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Room = void 0;
 class Room {
-    constructor(name) {
+    constructor(id) {
         Room.totalRoomsCount += 1;
-        this.id = String(Room.totalRoomsCount);
-        this.name = name;
+        this.id = id;
         this.members = [];
+        this.createTimestamp = Date.now();
     }
-    getDTO() {
-        return { id: this.id, name: this.name };
-    }
-    addMember(user) {
+    addUser(user) {
         this.members.push(user);
     }
-    getDetails() {
-        return { id: this.id, name: this.name, members: this.members };
+    size() {
+        return this.members.length;
+    }
+    getDto(exceptUserId) {
+        const members = [];
+        for (let i = 0; i < this.members.length; i++) {
+            if (this.members[i].socketId !== exceptUserId) {
+                members.push(this.members[i]);
+            }
+        }
+        return { id: this.id, members };
+    }
+    dropUser(socketId) {
+        for (let i = 0; i < this.members.length; i++) {
+            if (this.members[i].socketId === socketId) {
+                this.members.splice(i, 1);
+                return;
+            }
+        }
     }
 }
 exports.Room = Room;

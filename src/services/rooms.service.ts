@@ -1,95 +1,68 @@
 import { Injectable } from '@nestjs/common';
-import {IRoom, IRoomDetails, IRoomMember} from "../models/models";
-import {Room} from "../models/Room";
-import { Server } from "socket.io";
-
-export interface IUser {
-    isJoined: boolean;
-    socket: any;
-    id: string;
-    ip: string;
-}
+import { IAuthorisedUser, IGuest, IRoomDto } from '../models/models';
+import { Room } from '../models/Room';
+const crypto = require('crypto');
 
 @Injectable()
 export class RoomsService {
+  private readonly rooms: Map<string, Room> = new Map<string, Room>();
+  private static io;
 
-    private readonly rooms: Room[];
-    private static readonly users: IUser[] = [];
-    private static io;
+  constructor() {}
 
-    constructor() {
-        this.rooms = [new Room('test')];
+  createRoom(): string {
+    const roomId = this.generateRoomId();
+    this.rooms.set(roomId, new Room(roomId));
+    return roomId;
+  }
+
+  getOne(roomId: string, exceptUserId: string): IRoomDto {
+    if (this.rooms.has(roomId)) {
+      return this.rooms.get(roomId).getDto(exceptUserId);
     }
+    console.warn('no room with id ' + roomId);
+    return { id: '', members: [] };
+  }
 
-    joinRoom(roomId: string, user: IRoomMember): IRoomDetails {
-        const room = this.rooms.find(r => r.getDTO().id === roomId);
-        room.addMember(user);
-        return room.getDetails();
+  addUser(user: IAuthorisedUser | IGuest, roomId: string) {
+    if (this.rooms.has(roomId)) {
+      this.rooms.get(roomId).addUser(user);
     }
+  }
 
-    getAllRooms(): IRoom[] {
-        return this.rooms.map(r => r.getDTO());
+  hasRoom(roomId: string): boolean {
+    return this.rooms.has(roomId);
+  }
+
+  dropUser(socketId: string, roomId: string): boolean {
+    if (!this.rooms.has(roomId)) {
+      console.warn('[dropUser] no room with id "' + roomId + '"');
+      return false;
     }
-
-    public static createSocket(httpServer): void {
-        RoomsService.io = new Server(httpServer);
-        RoomsService.io.on('connection', (client) => {
-            const user = {isJoined: false, socket: client, id: client.conn.id, ip: client.conn.remoteAddress};
-            console.log('[connected]  ' + user.id);
-            RoomsService.users.push(user);
-
-            client.on('join', () => {
-                RoomsService.users.forEach(u => {
-                    console.log('[joined]  ' + user.id);
-                    if (u.isJoined && u.id !== user.id) {
-                        console.log(user.id + ' <-- got --| ' + u.id);
-                        client.emit('member', {userId: u.id});
-                    }
-                });
-                user.isJoined = true;
-            });
-
-            client.on('offer', payload => {
-                console.log('[offer]  ' + user.id + ' ---> ' + payload.to);
-                const destination = RoomsService.users.find(u => u.id === payload.to);
-                if (destination) {
-                    payload.to = undefined;
-                    payload.from = user.id;
-                    destination.socket.emit('offer', payload);
-                }
-            });
-
-            client.on('answer', payload => {
-                console.log('[answer]  ' + user.id  + ' ---> ' + payload.to);
-                const destination = RoomsService.users.find(u => u.id === payload.to);
-                if (destination) {
-                    payload.to = undefined;
-                    payload.from = user.id;
-                    destination.socket.emit('answer', payload);
-                }
-            });
-
-            client.on('candidate', payload => {
-                const destination = RoomsService.users.find(u => u.id === payload.to);
-                if (destination) {
-                    payload.to = undefined;
-                    payload.from = user.id;
-                    destination.socket.emit('candidate', payload);
-                }
-            });
-
-            client.on('disconnect', () => {
-               client.broadcast.emit('leave', {userId: user.id});
-               console.log('[disconnected]  ' + user.id);
-               for (let i = 0; i < RoomsService.users.length; i++) {
-                   if (RoomsService.users[i].id === user.id || RoomsService.users[i].ip === user.ip) {
-                       RoomsService.users.splice(i--, 1);
-                   }
-               }
-               console.log('users amount: ' + RoomsService.users.length + '\n');
-            });
-        })
+    const room = this.rooms.get(roomId);
+    room.dropUser(socketId);
+    if (room.size() > 0) {
+      return true;
+    } else {
+      // remove room if there are no members and it was created more than 1 hour ago;
+      if (Date.now() - room.createTimestamp > 1000 * 60 * 60) {
+        this.rooms.delete(roomId);
+      }
+      return false;
     }
+  }
 
+
+  private dropUnusedRooms(): void {
+
+  }
+
+  private generateRoomId(): string {
+    const dataToEncrypt = String(this.rooms.size + Math.random())
+    return crypto.createHash('md5')
+      .update(dataToEncrypt)
+      .digest('hex')
+      .substring(0, 7) + this.rooms.size;
+  }
 
 }

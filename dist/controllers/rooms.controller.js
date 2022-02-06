@@ -15,38 +15,45 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RoomsController = void 0;
 const common_1 = require("@nestjs/common");
 const rooms_service_1 = require("../services/rooms.service");
+const auth_service_1 = require("../services/auth.service");
 let RoomsController = class RoomsController {
-    constructor(roomsService) {
+    constructor(roomsService, authService) {
         this.roomsService = roomsService;
+        this.authService = authService;
     }
-    getAll() {
-        return JSON.stringify(this.roomsService.getAllRooms());
+    getOne(token, roomId) {
+        if (this.authService.isAuthorised(token)) {
+            const user = this.authService.get(token);
+            if (this.roomsService.hasRoom(roomId)) {
+                return this.roomsService.getOne(roomId, user.socketId);
+            }
+            return auth_service_1.ResponseCodes.NO_SUCH_ROOM;
+        }
+        return auth_service_1.ResponseCodes.UNAUTHORISED;
     }
-    getOne(id, request) {
-        const port = String(request.socket.remotePort);
-        const ip = request.socket.remoteAddress;
-        return JSON.stringify(this.roomsService.joinRoom(id, {
-            name: '', port, ip, login: '', password: '', photo: ''
-        }));
+    createRoom(token) {
+        return { roomId: this.roomsService.createRoom() };
     }
 };
 __decorate([
-    (0, common_1.Get)(''),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", String)
-], RoomsController.prototype, "getAll", null);
-__decorate([
     (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Req)()),
+    __param(0, (0, common_1.Headers)('authorisation')),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", String)
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Object)
 ], RoomsController.prototype, "getOne", null);
+__decorate([
+    (0, common_1.Post)('create'),
+    __param(0, (0, common_1.Headers)('authorisation')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Object)
+], RoomsController.prototype, "createRoom", null);
 RoomsController = __decorate([
     (0, common_1.Controller)('rooms'),
-    __metadata("design:paramtypes", [rooms_service_1.RoomsService])
+    __metadata("design:paramtypes", [rooms_service_1.RoomsService,
+        auth_service_1.AuthService])
 ], RoomsController);
 exports.RoomsController = RoomsController;
 //# sourceMappingURL=rooms.controller.js.map

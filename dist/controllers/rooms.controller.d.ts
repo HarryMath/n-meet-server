@@ -1,8 +1,12 @@
-import { RoomsService } from "../services/rooms.service";
-import { Request } from 'express';
+import { RoomsService } from '../services/rooms.service';
+import { AuthService } from '../services/auth.service';
+import { IRoomDto } from '../models/models';
 export declare class RoomsController {
     private readonly roomsService;
-    constructor(roomsService: RoomsService);
-    getAll(): string;
-    getOne(id: string, request: Request): string;
+    private readonly authService;
+    constructor(roomsService: RoomsService, authService: AuthService);
+    getOne(token: string, roomId: string): IRoomDto | number;
+    createRoom(token: string): {
+        roomId: string;
+    };
 }
