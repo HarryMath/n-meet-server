@@ -1,21 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { IAuthorisedUser, IGuest, IUser } from '../models/models';
+import { IAuthorisedUser, IGuest, IUser } from '../shared/models';
 const crypto = require('crypto');
 
-export const ResponseCodes = {
-  INCORRECT_LOGIN_OR_PASSWORD: -4,
-  NO_SUCH_ROOM: -3,
-  UNAUTHORISED: -2,
-  HTTP_ERROR: -1,
-  SUCCESS: 0,
-};
-
 @Injectable()
-export class AuthService {
-  private readonly dbUsers: IUser[] = [
-    { login: 'Mikilangelo', name: 'Mikita', password: AuthService.passwordHash('popa'), personId: 1, },
-    { login: 'Dashka', name: 'Dasha', password: AuthService.passwordHash('popa'), personId: 2, },
-  ];
+export class UsersService {
+  private readonly dbUsers: IUser[] = []; // TODO replace with table in DB
 
   private readonly users: Map<string, IAuthorisedUser | IGuest> = new Map<
     string,
@@ -49,10 +38,10 @@ export class AuthService {
     let user: IUser;
     for (let i = 0; i < this.dbUsers.length; i++) {
       user = this.dbUsers[i];
-      if (user.login === login && user.password === AuthService.passwordHash(password)) {
+      if (user.login === login && user.password === UsersService.passwordHash(password)) {
         isSuccess = true;
         token = this.generateToken();
-        this.users.set(token, AuthService.getUserDto(user));
+        this.users.set(token, UsersService.getUserDto(user));
         break;
       }
     }

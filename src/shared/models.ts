@@ -1,19 +1,30 @@
-export interface IEvent {
-  name: string;
-  startHours: number;
-  startMinutes: number;
-  minutesDuration: number;
-  color: string;
-  startDate: number;
-  repeatInterval: number;
-  repeatTimes: number;
-}
-
 export interface IUser {
   login: string; // unique
   name: string; // default login
   password: string;
   personId: number; // default login.endsWith('a') ? 2 : 1
+}
+
+export type IWsClient = any;
+
+export interface IRtcUserInfo {
+  isJoined: boolean;
+  roomId: string;
+  token: string;
+  socketId: string;
+}
+
+export type IRtcUser = IWsClient & {rtcInfo: IRtcUserInfo};
+
+export interface IRtcUserPackage {
+  from: string | IAuthorisedUser | IGuest;
+  token: string;
+  to: string;
+}
+
+export interface IPoint {
+  x: number;
+  y: number;
 }
 
 export interface IAuthorisedUser {

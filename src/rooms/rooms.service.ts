@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { IAuthorisedUser, IGuest, IRoomDto } from '../models/models';
-import { Room } from '../models/Room';
+import { IAuthorisedUser, IGuest, IRoomDto } from '../shared/models';
+import { Room } from './Room';
 const crypto = require('crypto');
 
 @Injectable()

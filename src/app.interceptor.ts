@@ -7,7 +7,7 @@ import {
 import { Observable } from 'rxjs';
 
 @Injectable()
-export class ResponseInspector implements NestInterceptor {
+export class AppInterceptor implements NestInterceptor {
   intercept(
     context: ExecutionContext,
     next: CallHandler,

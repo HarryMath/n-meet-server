@@ -1,4 +1,4 @@
-import { IAuthorisedUser, IGuest, IRoomDto } from './models';
+import { IAuthorisedUser, IGuest, IRoomDto } from '../shared/models';
 
 export class Room {
   public readonly createTimestamp: number;
